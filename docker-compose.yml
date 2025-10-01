@@ -17,6 +17,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - listify_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: listify_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://listify_user:listify_pass@postgres:5432/listify_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - listify_network
 
 volumes:
   postgres_data:
+
+networks:
+  listify_network:
+    driver: bridge
