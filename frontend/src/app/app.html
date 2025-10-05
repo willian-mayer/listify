@@ -1,10 +1,19 @@
-<!-- src/app/app.component.html -->
-<div class="app-container">
+<!-- Mostrar Auth si no hay usuario logueado -->
+<app-auth *ngIf="!currentUser"></app-auth>
+
+<!-- Mostrar la app principal si hay usuario logueado -->
+<div class="app-container" *ngIf="currentUser">
   <!-- Header -->
   <header class="header">
     <div class="header-content">
       <h1>📝 Listify</h1>
       <p>Organiza tus tareas fácilmente</p>
+    </div>
+    <div class="header-user">
+      <span class="user-name">👋 {{ currentUser.name }}</span>
+      <button class="btn-logout" (click)="logout()">
+        Cerrar sesión
+      </button>
     </div>
   </header>
 

@@ -1,21 +1,24 @@
-// src/app/app.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { AuthService } from './services/auth.service';
 import { ListService } from './services/list.service';
 import { ItemService } from './services/item.service';
+import { AuthComponent } from './auth/auth';
+import { User } from './models/user.model';
 import { List } from './models/list.model';
 import { Item } from './models/item.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, AuthComponent],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
 export class AppComponent implements OnInit {
+  currentUser: User | null = null;
   lists: List[] = [];
   selectedList: List | null = null;
   items: Item[] = [];
@@ -27,12 +30,27 @@ export class AppComponent implements OnInit {
   isEditMode = false;
 
   constructor(
+    private authService: AuthService,
     private listService: ListService,
     private itemService: ItemService
   ) {}
 
   ngOnInit() {
-    this.loadLists();
+    // Suscribirse al estado de autenticación
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+      if (user) {
+        this.loadLists();
+      } else {
+        this.lists = [];
+        this.selectedList = null;
+        this.items = [];
+      }
+    });
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
 
   loadLists() {
@@ -59,7 +77,7 @@ export class AppComponent implements OnInit {
     });
   }
 
-  // List operations
+  // ... resto de los métodos (igual que antes)
   openListModal(list?: List) {
     this.isEditMode = !!list;
     this.editingList = list ? { ...list } : { title: '', description: '' };
@@ -108,7 +126,6 @@ export class AppComponent implements OnInit {
     });
   }
 
-  // Item operations
   openItemModal(item?: Item) {
     if (!this.selectedList) return;
     
@@ -128,7 +145,6 @@ export class AppComponent implements OnInit {
     if (!this.editingItem.name?.trim() || !this.selectedList) return;
 
     if (this.isEditMode && this.editingItem.id) {
-      // Actualizar item existente
       this.itemService.updateItem(this.editingItem.id, this.editingItem).subscribe({
         next: () => {
           this.loadItems(this.selectedList!.id!);
@@ -137,7 +153,6 @@ export class AppComponent implements OnInit {
         error: (err) => console.error('Error updating item:', err)
       });
     } else {
-      // Crear nuevo item (ahora pasa listId como primer parámetro)
       this.itemService.createItem(this.selectedList.id!, this.editingItem).subscribe({
         next: () => {
           this.loadItems(this.selectedList!.id!);
@@ -149,7 +164,6 @@ export class AppComponent implements OnInit {
   }
 
   toggleItem(item: Item) {
-    // toggleItem ahora no recibe parámetros, el backend lo maneja
     this.itemService.toggleItem(item.id!).subscribe({
       next: () => this.loadItems(this.selectedList!.id!),
       error: (err) => console.error('Error toggling item:', err)

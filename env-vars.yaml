@@ -3,3 +3,4 @@ DATABASE_URL: "postgresql://listify_user:listify_pass_prod@/listify_db?host=/clo
 DEBUG: "False"
 APP_NAME: "Listify"
 CORS_ORIGINS: "https://listify-frontend-832490400305.us-central1.run.app,https://listify.space,https://www.listify.space,http://localhost:4200"
+ENVIRONMENT: "production"

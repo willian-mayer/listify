@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+import os
 from app.database import engine
 from app.models import Base
-from app.routers import lists, items, auth  # Importar auth
+from app.routers import lists, items, auth
 
 Base.metadata.create_all(bind=engine)
 
@@ -21,10 +22,13 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 app = FastAPI(
     title="Listify API",
     description="API para gestionar listas genéricas con items",
-    version="2.0.0"  # Actualizar versión
+    version="2.0.0"
 )
 
-app.add_middleware(HTTPSRedirectMiddleware)
+# Solo agregar el middleware HTTPS en producción
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+if ENVIRONMENT == "production":
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 origins = [
     "http://localhost:4200",
