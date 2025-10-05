@@ -13,22 +13,27 @@ export class ListService {
 
   constructor(private http: HttpClient) {}
 
+  // Obtener todas las listas
   getLists(): Observable<List[]> {
     return this.http.get<List[]>(this.apiUrl);
   }
 
+  // Obtener una lista específica (incluye sus items)
   getList(id: number): Observable<List> {
     return this.http.get<List>(`${this.apiUrl}/${id}`);
   }
 
-  createList(list: List): Observable<List> {
+  // Crear una nueva lista
+  createList(list: Partial<List>): Observable<List> {
     return this.http.post<List>(this.apiUrl, list);
   }
 
-  updateList(id: number, list: List): Observable<List> {
+  // Actualizar una lista
+  updateList(id: number, list: Partial<List>): Observable<List> {
     return this.http.put<List>(`${this.apiUrl}/${id}`, list);
   }
 
+  // Eliminar una lista
   deleteList(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }

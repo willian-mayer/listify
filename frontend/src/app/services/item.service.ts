@@ -13,27 +13,32 @@ export class ItemService {
 
   constructor(private http: HttpClient) {}
 
-  getItems(listId?: number): Observable<Item[]> {
-    const url = listId ? `${this.apiUrl}?list_id=${listId}` : this.apiUrl;
-    return this.http.get<Item[]>(url);
+  // Obtener items de una lista específica
+  getItems(listId: number): Observable<Item[]> {
+    return this.http.get<Item[]>(`${this.apiUrl}/list/${listId}`);
   }
 
+  // Obtener un item específico
   getItem(id: number): Observable<Item> {
     return this.http.get<Item>(`${this.apiUrl}/${id}`);
   }
 
-  createItem(item: Item): Observable<Item> {
-    return this.http.post<Item>(this.apiUrl, item);
+  // Crear un nuevo item (el list_id va como query parameter)
+  createItem(listId: number, item: Partial<Item>): Observable<Item> {
+    return this.http.post<Item>(`${this.apiUrl}/?list_id=${listId}`, item);
   }
 
-  updateItem(id: number, item: Item): Observable<Item> {
+  // Actualizar un item
+  updateItem(id: number, item: Partial<Item>): Observable<Item> {
     return this.http.put<Item>(`${this.apiUrl}/${id}`, item);
   }
 
-  toggleItem(id: number, checked: boolean): Observable<Item> {
-    return this.http.patch<Item>(`${this.apiUrl}/${id}`, { checked });
+  // Toggle del checkbox (usa el endpoint específico de toggle)
+  toggleItem(id: number): Observable<Item> {
+    return this.http.patch<Item>(`${this.apiUrl}/${id}/toggle`, {});
   }
 
+  // Eliminar un item
   deleteItem(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }

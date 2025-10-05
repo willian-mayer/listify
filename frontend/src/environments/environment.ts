@@ -1,6 +1,4 @@
-// src/environments/environment.ts
 export const environment = {
   production: false,
-  apiUrl: 'https://listify-backend-832490400305.us-central1.run.app/api'
+  apiUrl: 'http://localhost:8000/api'  // ← Backend en Docker local
 };
-

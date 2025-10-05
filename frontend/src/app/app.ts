@@ -1,4 +1,4 @@
-// src/app/app.component.ts
+// src/app/app.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -22,8 +22,8 @@ export class AppComponent implements OnInit {
   
   showListModal = false;
   showItemModal = false;
-  editingList: List = { title: '', description: '' };
-  editingItem: Item = { list_id: 0, name: '', checked: false };
+  editingList: Partial<List> = { title: '', description: '' };
+  editingItem: Partial<Item> = { name: '', checked: false };
   isEditMode = false;
 
   constructor(
@@ -72,7 +72,7 @@ export class AppComponent implements OnInit {
   }
 
   saveList() {
-    if (!this.editingList.title.trim()) return;
+    if (!this.editingList.title?.trim()) return;
 
     if (this.isEditMode && this.editingList.id) {
       this.listService.updateList(this.editingList.id, this.editingList).subscribe({
@@ -115,19 +115,20 @@ export class AppComponent implements OnInit {
     this.isEditMode = !!item;
     this.editingItem = item 
       ? { ...item } 
-      : { list_id: this.selectedList.id!, name: '', checked: false };
+      : { name: '', checked: false };
     this.showItemModal = true;
   }
 
   closeItemModal() {
     this.showItemModal = false;
-    this.editingItem = { list_id: 0, name: '', checked: false };
+    this.editingItem = { name: '', checked: false };
   }
 
   saveItem() {
-    if (!this.editingItem.name.trim()) return;
+    if (!this.editingItem.name?.trim() || !this.selectedList) return;
 
     if (this.isEditMode && this.editingItem.id) {
+      // Actualizar item existente
       this.itemService.updateItem(this.editingItem.id, this.editingItem).subscribe({
         next: () => {
           this.loadItems(this.selectedList!.id!);
@@ -136,7 +137,8 @@ export class AppComponent implements OnInit {
         error: (err) => console.error('Error updating item:', err)
       });
     } else {
-      this.itemService.createItem(this.editingItem).subscribe({
+      // Crear nuevo item (ahora pasa listId como primer parámetro)
+      this.itemService.createItem(this.selectedList.id!, this.editingItem).subscribe({
         next: () => {
           this.loadItems(this.selectedList!.id!);
           this.closeItemModal();
@@ -147,7 +149,8 @@ export class AppComponent implements OnInit {
   }
 
   toggleItem(item: Item) {
-    this.itemService.toggleItem(item.id!, !item.checked).subscribe({
+    // toggleItem ahora no recibe parámetros, el backend lo maneja
+    this.itemService.toggleItem(item.id!).subscribe({
       next: () => this.loadItems(this.selectedList!.id!),
       error: (err) => console.error('Error toggling item:', err)
     });
