@@ -2,22 +2,38 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List as ListType
 from app.database import get_db
-from app.models import Item as ItemModel, List as ListModel
+from app.models import Item as ItemModel, List as ListModel, User
 from app.schemas import ItemCreate, ItemUpdate, Item
+from app.auth import get_current_user
 
 router = APIRouter()
 
 
-@router.post("/", response_model=Item, status_code=status.HTTP_201_CREATED)
-def create_item(item_data: ItemCreate, list_id: int, db: Session = Depends(get_db)):
-    """Crear un nuevo item en una lista"""
-    # Verificar que la lista existe
-    list_obj = db.query(ListModel).filter(ListModel.id == list_id).first()
+def verify_list_ownership(list_id: int, user_id: int, db: Session):
+    """Verificar que la lista pertenece al usuario"""
+    list_obj = db.query(ListModel).filter(
+        ListModel.id == list_id,
+        ListModel.user_id == user_id
+    ).first()
+    
     if not list_obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Lista con id {list_id} no encontrada"
         )
+    return list_obj
+
+
+@router.post("/", response_model=Item, status_code=status.HTTP_201_CREATED)
+def create_item(
+    item_data: ItemCreate, 
+    list_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Crear un nuevo item en una lista"""
+    # Verificar que la lista existe y pertenece al usuario
+    verify_list_ownership(list_id, current_user.id, db)
     
     new_item = ItemModel(**item_data.model_dump(), list_id=list_id)
     db.add(new_item)
@@ -27,24 +43,31 @@ def create_item(item_data: ItemCreate, list_id: int, db: Session = Depends(get_d
 
 
 @router.get("/list/{list_id}", response_model=ListType[Item])
-def get_items_by_list(list_id: int, db: Session = Depends(get_db)):
+def get_items_by_list(
+    list_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Obtener todos los items de una lista específica"""
-    # Verificar que la lista existe
-    list_obj = db.query(ListModel).filter(ListModel.id == list_id).first()
-    if not list_obj:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Lista con id {list_id} no encontrada"
-        )
+    # Verificar que la lista existe y pertenece al usuario
+    verify_list_ownership(list_id, current_user.id, db)
     
     items = db.query(ItemModel).filter(ItemModel.list_id == list_id).all()
     return items
 
 
 @router.get("/{item_id}", response_model=Item)
-def get_item_by_id(item_id: int, db: Session = Depends(get_db)):
+def get_item_by_id(
+    item_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Obtener un item específico"""
-    item = db.query(ItemModel).filter(ItemModel.id == item_id).first()
+    item = db.query(ItemModel).join(ListModel).filter(
+        ItemModel.id == item_id,
+        ListModel.user_id == current_user.id
+    ).first()
+    
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -54,9 +77,18 @@ def get_item_by_id(item_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{item_id}", response_model=Item)
-def update_item(item_id: int, item_data: ItemUpdate, db: Session = Depends(get_db)):
-    """Actualizar un item (cambiar nombre o checked)"""
-    item = db.query(ItemModel).filter(ItemModel.id == item_id).first()
+def update_item(
+    item_id: int, 
+    item_data: ItemUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Actualizar un item"""
+    item = db.query(ItemModel).join(ListModel).filter(
+        ItemModel.id == item_id,
+        ListModel.user_id == current_user.id
+    ).first()
+    
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -73,9 +105,17 @@ def update_item(item_id: int, item_data: ItemUpdate, db: Session = Depends(get_d
 
 
 @router.patch("/{item_id}/toggle", response_model=Item)
-def toggle_item_checked(item_id: int, db: Session = Depends(get_db)):
+def toggle_item_checked(
+    item_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Alternar el estado checked de un item"""
-    item = db.query(ItemModel).filter(ItemModel.id == item_id).first()
+    item = db.query(ItemModel).join(ListModel).filter(
+        ItemModel.id == item_id,
+        ListModel.user_id == current_user.id
+    ).first()
+    
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -89,9 +129,17 @@ def toggle_item_checked(item_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_item(item_id: int, db: Session = Depends(get_db)):
+def delete_item(
+    item_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Eliminar un item"""
-    item = db.query(ItemModel).filter(ItemModel.id == item_id).first()
+    item = db.query(ItemModel).join(ListModel).filter(
+        ItemModel.id == item_id,
+        ListModel.user_id == current_user.id
+    ).first()
+    
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

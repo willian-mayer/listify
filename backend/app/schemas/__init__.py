@@ -45,6 +45,7 @@ class ListUpdate(BaseModel):
 
 class ListWithItems(ListBase):
     id: int
+    user_id: int  # NUEVO
     created_at: datetime
     updated_at: Optional[datetime] = None
     items: List[Item] = []
@@ -55,6 +56,7 @@ class ListWithItems(ListBase):
 
 class ListResponse(ListBase):
     id: int
+    user_id: int  # NUEVO
     created_at: datetime
     updated_at: Optional[datetime] = None
 

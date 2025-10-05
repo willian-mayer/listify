@@ -2,16 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.models import List as ListModel
+from app.models import List as ListModel, User
 from app.schemas import ListCreate, ListUpdate, ListResponse, ListWithItems
+from app.auth import get_current_user
 
 router = APIRouter()
 
 
 @router.post("/", response_model=ListResponse, status_code=status.HTTP_201_CREATED)
-def create_list(list_data: ListCreate, db: Session = Depends(get_db)):
+def create_list(
+    list_data: ListCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Crear una nueva lista"""
-    new_list = ListModel(**list_data.model_dump())
+    new_list = ListModel(**list_data.model_dump(), user_id=current_user.id)
     db.add(new_list)
     db.commit()
     db.refresh(new_list)
@@ -19,16 +24,31 @@ def create_list(list_data: ListCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[ListResponse])
-def get_all_lists(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Obtener todas las listas"""
-    lists = db.query(ListModel).offset(skip).limit(limit).all()
+def get_all_lists(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Obtener todas las listas del usuario actual"""
+    lists = db.query(ListModel).filter(
+        ListModel.user_id == current_user.id
+    ).offset(skip).limit(limit).all()
     return lists
 
 
 @router.get("/{list_id}", response_model=ListWithItems)
-def get_list_by_id(list_id: int, db: Session = Depends(get_db)):
+def get_list_by_id(
+    list_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Obtener una lista específica con todos sus items"""
-    list_obj = db.query(ListModel).filter(ListModel.id == list_id).first()
+    list_obj = db.query(ListModel).filter(
+        ListModel.id == list_id,
+        ListModel.user_id == current_user.id
+    ).first()
+    
     if not list_obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -38,9 +58,18 @@ def get_list_by_id(list_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{list_id}", response_model=ListResponse)
-def update_list(list_id: int, list_data: ListUpdate, db: Session = Depends(get_db)):
+def update_list(
+    list_id: int, 
+    list_data: ListUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Actualizar una lista"""
-    list_obj = db.query(ListModel).filter(ListModel.id == list_id).first()
+    list_obj = db.query(ListModel).filter(
+        ListModel.id == list_id,
+        ListModel.user_id == current_user.id
+    ).first()
+    
     if not list_obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -57,9 +86,17 @@ def update_list(list_id: int, list_data: ListUpdate, db: Session = Depends(get_d
 
 
 @router.delete("/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_list(list_id: int, db: Session = Depends(get_db)):
+def delete_list(
+    list_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Eliminar una lista y todos sus items"""
-    list_obj = db.query(ListModel).filter(ListModel.id == list_id).first()
+    list_obj = db.query(ListModel).filter(
+        ListModel.id == list_id,
+        ListModel.user_id == current_user.id
+    ).first()
+    
     if not list_obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
