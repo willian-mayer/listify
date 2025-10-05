@@ -18,7 +18,7 @@ origins = [
     "http://localhost:4200",  # Angular development server
     "http://localhost:3000",  # Alternativa
     "http://localhost",  # Frontend en Docker local
-    "https://listify-frontend-2dwgatolca-uc.a.run.app",  # Cloud Run frontend
+    "https://listify-frontend-832490400305.us-central1.run.app",  # Cloud Run frontend
     "https://listify.space",  # Dominio principal
     "https://www.listify.space",  # Dominio con www
 ]
