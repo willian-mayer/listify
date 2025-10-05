@@ -5,11 +5,12 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+import os
 from app.database import get_db
 from app.models import User
 
-# Configuración
-SECRET_KEY = "tu_clave_secreta_muy_segura_cambiala_en_produccion"  # CAMBIAR EN PRODUCCIÓN
+# Configuración - usar variable de entorno en producción
+SECRET_KEY = os.getenv("SECRET_KEY", "tu_clave_local_para_desarrollo_solo")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 días
 

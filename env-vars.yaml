@@ -1,0 +1,5 @@
+SECRET_KEY: "Eek-20FBw6fSNuxCXJoCE-wjQQmNp-5sMP1-vl4RpxQ"
+DATABASE_URL: "postgresql://listify_user:listify_pass_prod@/listify_db?host=/cloudsql/listify-474200:us-central1:listify-postgres"
+DEBUG: "False"
+APP_NAME: "Listify"
+CORS_ORIGINS: "https://listify-frontend-832490400305.us-central1.run.app,https://listify.space,https://www.listify.space,http://localhost:4200"

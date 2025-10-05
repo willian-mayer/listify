@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     APP_NAME: str = "Listify"
     DEBUG: bool = True
     
+    # Security
+    SECRET_KEY: str = "Eek-20FBw6fSNuxCXJoCE-wjQQmNp-5sMP1-vl4RpxQ"
+    
     # CORS - Lista de origins permitidos separados por coma
     CORS_ORIGINS: str = "http://localhost:4200,http://localhost:3000"
     
