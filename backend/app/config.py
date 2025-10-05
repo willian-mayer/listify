@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import List
 
 class Settings(BaseSettings):
     # Database
@@ -9,8 +9,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "Listify"
     DEBUG: bool = True
     
-    # CORS
-    BACKEND_CORS_ORIGINS: list = ["*"]
+    # CORS - Lista de origins permitidos separados por coma
+    CORS_ORIGINS: str = "http://localhost:4200,http://localhost:3000"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
     
     class Config:
         env_file = ".env"

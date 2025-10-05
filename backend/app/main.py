@@ -14,11 +14,17 @@ app = FastAPI(
 )
 
 # Configurar CORS para permitir requests desde el frontend
+origins = [
+    "http://localhost:4200",  # Angular development server
+    "http://localhost:3000",  # Alternativa
+    "https://listify-frontend-*.run.app",  # Cloud Run frontend (ajusta después)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, especifica el dominio del frontend
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
