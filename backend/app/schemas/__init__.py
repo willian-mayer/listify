@@ -45,7 +45,9 @@ class ListUpdate(BaseModel):
 
 class ListWithItems(ListBase):
     id: int
-    user_id: int  # NUEVO
+    user_id: int
+    share_token: Optional[str] = None  # NUEVO
+    is_shared: bool  # NUEVO
     created_at: datetime
     updated_at: Optional[datetime] = None
     items: List[Item] = []
@@ -56,9 +58,17 @@ class ListWithItems(ListBase):
 
 class ListResponse(ListBase):
     id: int
-    user_id: int  # NUEVO
+    user_id: int
+    share_token: Optional[str] = None  # NUEVO
+    is_shared: bool  # NUEVO
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+# Schema para compartir
+class ShareLinkResponse(BaseModel):
+    share_token: str
+    share_url: str

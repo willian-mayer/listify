@@ -9,18 +9,23 @@ from app.auth import get_current_user
 router = APIRouter()
 
 
-def verify_list_ownership(list_id: int, user_id: int, db: Session):
-    """Verificar que la lista pertenece al usuario"""
-    list_obj = db.query(ListModel).filter(
-        ListModel.id == list_id,
-        ListModel.user_id == user_id
-    ).first()
+def verify_list_access(list_id: int, user_id: int, db: Session):
+    """Verificar que el usuario tiene acceso a la lista (dueño o compartida)"""
+    list_obj = db.query(ListModel).filter(ListModel.id == list_id).first()
     
     if not list_obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Lista con id {list_id} no encontrada"
         )
+    
+    # Permitir acceso si es el dueño O si la lista está compartida
+    if list_obj.user_id != user_id and not list_obj.is_shared:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para acceder a esta lista"
+        )
+    
     return list_obj
 
 
@@ -32,8 +37,7 @@ def create_item(
     current_user: User = Depends(get_current_user)
 ):
     """Crear un nuevo item en una lista"""
-    # Verificar que la lista existe y pertenece al usuario
-    verify_list_ownership(list_id, current_user.id, db)
+    verify_list_access(list_id, current_user.id, db)
     
     new_item = ItemModel(**item_data.model_dump(), list_id=list_id)
     db.add(new_item)
@@ -49,8 +53,7 @@ def get_items_by_list(
     current_user: User = Depends(get_current_user)
 ):
     """Obtener todos los items de una lista específica"""
-    # Verificar que la lista existe y pertenece al usuario
-    verify_list_ownership(list_id, current_user.id, db)
+    verify_list_access(list_id, current_user.id, db)
     
     items = db.query(ItemModel).filter(ItemModel.list_id == list_id).all()
     return items
@@ -64,8 +67,7 @@ def get_item_by_id(
 ):
     """Obtener un item específico"""
     item = db.query(ItemModel).join(ListModel).filter(
-        ItemModel.id == item_id,
-        ListModel.user_id == current_user.id
+        ItemModel.id == item_id
     ).first()
     
     if not item:
@@ -73,6 +75,14 @@ def get_item_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Item con id {item_id} no encontrado"
         )
+    
+    # Verificar acceso
+    if item.list.user_id != current_user.id and not item.list.is_shared:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para acceder a este item"
+        )
+    
     return item
 
 
@@ -85,14 +95,20 @@ def update_item(
 ):
     """Actualizar un item"""
     item = db.query(ItemModel).join(ListModel).filter(
-        ItemModel.id == item_id,
-        ListModel.user_id == current_user.id
+        ItemModel.id == item_id
     ).first()
     
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Item con id {item_id} no encontrado"
+        )
+    
+    # Verificar acceso
+    if item.list.user_id != current_user.id and not item.list.is_shared:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para modificar este item"
         )
     
     update_data = item_data.model_dump(exclude_unset=True)
@@ -112,14 +128,20 @@ def toggle_item_checked(
 ):
     """Alternar el estado checked de un item"""
     item = db.query(ItemModel).join(ListModel).filter(
-        ItemModel.id == item_id,
-        ListModel.user_id == current_user.id
+        ItemModel.id == item_id
     ).first()
     
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Item con id {item_id} no encontrado"
+        )
+    
+    # Verificar acceso
+    if item.list.user_id != current_user.id and not item.list.is_shared:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para modificar este item"
         )
     
     item.checked = not item.checked
@@ -136,14 +158,20 @@ def delete_item(
 ):
     """Eliminar un item"""
     item = db.query(ItemModel).join(ListModel).filter(
-        ItemModel.id == item_id,
-        ListModel.user_id == current_user.id
+        ItemModel.id == item_id
     ).first()
     
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Item con id {item_id} no encontrado"
+        )
+    
+    # Verificar acceso
+    if item.list.user_id != current_user.id and not item.list.is_shared:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para eliminar este item"
         )
     
     db.delete(item)

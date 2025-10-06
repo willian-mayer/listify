@@ -1,0 +1,131 @@
+<div class="shared-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando lista compartida...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-state">
+    <div class="error-icon">❌</div>
+    <h2>{{ error }}</h2>
+    <p>El link puede haber expirado o la lista fue eliminada.</p>
+    <button class="btn btn-primary" (click)="goHome()">
+      Volver al inicio
+    </button>
+  </div>
+
+  <!-- Shared List Content -->
+  <div *ngIf="sharedList && !loading" class="shared-content">
+    <header class="shared-header">
+      <div class="header-content">
+        <button class="btn-back" (click)="goHome()">← Volver</button>
+        <div class="header-info">
+          <span class="shared-badge">🔗 Lista Compartida</span>
+          <h1>{{ sharedList.title }}</h1>
+          <p *ngIf="sharedList.description">{{ sharedList.description }}</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="shared-main">
+      <div class="items-header">
+        <div>
+          <p class="progress-text">
+            {{ completedCount }} de {{ items.length }} completados
+          </p>
+        </div>
+        <button class="btn btn-primary" (click)="openItemModal()">
+          <span>+</span> Nuevo Item
+        </button>
+      </div>
+
+      <div class="progress-bar">
+        <div 
+          class="progress-fill" 
+          [style.width.%]="items.length ? (completedCount / items.length) * 100 : 0">
+        </div>
+      </div>
+
+      <div class="items-list">
+        <div 
+          *ngFor="let item of items" 
+          class="item-card"
+          [class.checked]="item.checked">
+          <label class="checkbox-container">
+            <input 
+              type="checkbox" 
+              [checked]="item.checked"
+              (change)="toggleItem(item)">
+            <span class="checkmark"></span>
+          </label>
+          
+          <span class="item-name">{{ item.name }}</span>
+          
+          <div class="item-actions">
+            <button 
+              class="btn-icon" 
+              (click)="openItemModal(item)"
+              title="Editar">
+              ✏️
+            </button>
+            <button 
+              class="btn-icon" 
+              (click)="deleteItem(item)"
+              title="Eliminar">
+              🗑️
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="items.length === 0" class="empty-state">
+          <p>No hay items en esta lista</p>
+          <p class="empty-state-hint">Agrega el primer item</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Item -->
+<div class="modal" *ngIf="showItemModal" (click)="closeItemModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditMode ? 'Editar Item' : 'Nuevo Item' }}</h2>
+      <button class="btn-close" (click)="closeItemModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input 
+          type="text" 
+          [(ngModel)]="editingItem.name"
+          placeholder="Ej: Comprar leche"
+          class="form-input"
+          autofocus>
+      </div>
+      
+      <div class="form-group" *ngIf="isEditMode">
+        <label class="checkbox-label">
+          <input 
+            type="checkbox" 
+            [(ngModel)]="editingItem.checked">
+          Completado
+        </label>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeItemModal()">
+        Cancelar
+      </button>
+      <button 
+        class="btn btn-primary" 
+        (click)="saveItem()"
+        [disabled]="!editingItem.name?.trim()">
+        {{ isEditMode ? 'Guardar' : 'Crear' }}
+      </button>
+    </div>
+  </div>
+</div>

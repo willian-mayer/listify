@@ -4,7 +4,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import os
 from app.database import engine
 from app.models import Base
-from app.routers import lists, items, auth
+from app.routers import lists, items, auth, share  # Agregar share
 
 Base.metadata.create_all(bind=engine)
 
@@ -22,10 +22,9 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 app = FastAPI(
     title="Listify API",
     description="API para gestionar listas genéricas con items",
-    version="2.0.0"
+    version="2.1.0"  # Actualizar versión
 )
 
-# Solo agregar el middleware HTTPS en producción
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 if ENVIRONMENT == "production":
     app.add_middleware(HTTPSRedirectMiddleware)
@@ -51,11 +50,12 @@ app.add_middleware(
 def read_root():
     return {
         "message": "Welcome to Listify API",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "endpoints": {
             "auth": "/api/auth",
             "lists": "/api/lists",
             "items": "/api/items",
+            "share": "/api/share",  # NUEVO
             "health": "/health"
         }
     }
@@ -65,6 +65,7 @@ def health_check():
     return {"status": "healthy", "database": "connected"}
 
 # Incluir routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])  # NUEVO
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(lists.router, prefix="/api/lists", tags=["Lists"])
 app.include_router(items.router, prefix="/api/items", tags=["Items"])
+app.include_router(share.router, prefix="/api/share", tags=["Share"])  # NUEVO

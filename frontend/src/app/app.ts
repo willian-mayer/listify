@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
+import { interval, Subscription } from 'rxjs';  // AGREGAR
 import { AuthService } from './services/auth.service';
 import { ListService } from './services/list.service';
 import { ItemService } from './services/item.service';
@@ -9,15 +11,17 @@ import { AuthComponent } from './auth/auth';
 import { User } from './models/user.model';
 import { List } from './models/list.model';
 import { Item } from './models/item.model';
+import { ShareService } from './services/share.service';
+import { ShareLinkResponse } from './models/list.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule, AuthComponent],
+  imports: [CommonModule, FormsModule, HttpClientModule, AuthComponent, RouterOutlet],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {  // AGREGAR OnDestroy
   currentUser: User | null = null;
   lists: List[] = [];
   selectedList: List | null = null;
@@ -29,24 +33,57 @@ export class AppComponent implements OnInit {
   editingItem: Partial<Item> = { name: '', checked: false };
   isEditMode = false;
 
+  showShareModal = false;
+  shareLink = '';
+  isSharedRoute = false;
+  
+  private pollingSubscription?: Subscription;  // AGREGAR
+
   constructor(
     private authService: AuthService,
     private listService: ListService,
-    private itemService: ItemService
-  ) {}
+    private itemService: ItemService,
+    private shareService: ShareService,
+    private router: Router
+  ) {
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.isSharedRoute = event.url.includes('/shared/');
+      }
+    });
+  }
 
   ngOnInit() {
-    // Suscribirse al estado de autenticación
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
       if (user) {
         this.loadLists();
+        this.startPolling();  // AGREGAR
       } else {
+        this.stopPolling();  // AGREGAR
         this.lists = [];
         this.selectedList = null;
         this.items = [];
       }
     });
+  }
+
+  ngOnDestroy() {  // AGREGAR
+    this.stopPolling();
+  }
+
+  startPolling(): void {  // AGREGAR
+    this.pollingSubscription = interval(3000).subscribe(() => {
+      if (this.selectedList && this.currentUser && !this.isSharedRoute) {
+        this.loadItems(this.selectedList.id!);
+      }
+    });
+  }
+
+  stopPolling(): void {  // AGREGAR
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+    }
   }
 
   logout(): void {
@@ -77,7 +114,7 @@ export class AppComponent implements OnInit {
     });
   }
 
-  // ... resto de los métodos (igual que antes)
+  // ... resto del código igual
   openListModal(list?: List) {
     this.isEditMode = !!list;
     this.editingList = list ? { ...list } : { title: '', description: '' };
@@ -181,5 +218,58 @@ export class AppComponent implements OnInit {
 
   get completedCount(): number {
     return this.items.filter(i => i.checked).length;
+  }
+
+  openShareModal(): void {
+    if (!this.selectedList) return;
+
+    if (this.selectedList.share_token) {
+      this.shareLink = `${window.location.origin}/shared/${this.selectedList.share_token}`;
+      this.showShareModal = true;
+      return;
+    }
+
+    this.shareService.createShareLink(this.selectedList.id!).subscribe({
+      next: (response: ShareLinkResponse) => {
+        this.shareLink = response.share_url;
+        this.showShareModal = true;
+        if (this.selectedList) {
+          this.selectedList.share_token = response.share_token;
+          this.selectedList.is_shared = true;
+        }
+        this.loadLists();
+      },
+      error: (err) => console.error('Error creating share link:', err)
+    });
+  }
+
+  closeShareModal(): void {
+    this.showShareModal = false;
+    this.shareLink = '';
+  }
+
+  copyShareLink(): void {
+    navigator.clipboard.writeText(this.shareLink).then(() => {
+      alert('¡Link copiado al portapapeles!');
+    });
+  }
+
+  revokeShare(): void {
+    if (!this.selectedList || !confirm('¿Desactivar el link compartido? Las personas que lo tengan ya no podrán acceder.')) {
+      return;
+    }
+
+    this.shareService.revokeShareLink(this.selectedList.id!).subscribe({
+      next: () => {
+        if (this.selectedList) {
+          this.selectedList.share_token = null;
+          this.selectedList.is_shared = false;
+        }
+        this.closeShareModal();
+        this.loadLists();
+        alert('Link desactivado correctamente');
+      },
+      error: (err) => console.error('Error revoking share:', err)
+    });
   }
 }

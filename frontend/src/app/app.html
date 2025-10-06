@@ -1,8 +1,11 @@
 <!-- Mostrar Auth si no hay usuario logueado -->
 <app-auth *ngIf="!currentUser"></app-auth>
 
-<!-- Mostrar la app principal si hay usuario logueado -->
-<div class="app-container" *ngIf="currentUser">
+<!-- Outlet para rutas compartidas -->
+<router-outlet *ngIf="currentUser && isSharedRoute"></router-outlet>
+
+<!-- Mostrar la app principal si hay usuario logueado Y NO estamos en ruta compartida -->
+<div class="app-container" *ngIf="currentUser && !isSharedRoute">
   <!-- Header -->
   <header class="header">
     <div class="header-content">
@@ -70,9 +73,14 @@
               {{ completedCount }} de {{ items.length }} completados
             </p>
           </div>
-          <button class="btn btn-primary" (click)="openItemModal()">
-            <span>+</span> Nuevo Item
-          </button>
+          <div class="header-buttons">
+            <button class="btn btn-share" (click)="openShareModal()" title="Compartir lista">
+              🔗 Compartir
+            </button>
+            <button class="btn btn-primary" (click)="openItemModal()">
+              <span>+</span> Nuevo Item
+            </button>
+          </div>
         </div>
 
         <div class="progress-bar">
@@ -210,6 +218,46 @@
         (click)="saveItem()"
         [disabled]="!editingItem.name?.trim()">
         {{ isEditMode ? 'Guardar' : 'Crear' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Compartir -->
+<div class="modal" *ngIf="showShareModal" (click)="closeShareModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🔗 Compartir Lista</h2>
+      <button class="btn-close" (click)="closeShareModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <p class="share-description">
+        Cualquier persona con este link podrá ver y editar esta lista.
+      </p>
+      
+      <div class="share-link-container">
+        <input 
+          type="text" 
+          [value]="shareLink" 
+          class="share-link-input"
+          readonly>
+        <button class="btn btn-primary" (click)="copyShareLink()">
+          📋 Copiar
+        </button>
+      </div>
+
+      <div class="share-warning">
+        ⚠️ Cualquiera con este link puede ver y modificar los items de la lista.
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-danger" (click)="revokeShare()">
+        Desactivar Link
+      </button>
+      <button class="btn btn-secondary" (click)="closeShareModal()">
+        Cerrar
       </button>
     </div>
   </div>

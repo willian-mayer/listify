@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+import secrets
 
 class User(Base):
     __tablename__ = "users"
@@ -13,7 +14,6 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relación con listas
     lists = relationship("List", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -23,13 +23,14 @@ class List(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # NUEVO
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    share_token = Column(String, unique=True, nullable=True, index=True)  # NUEVO
+    is_shared = Column(Boolean, default=False)  # NUEVO
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relaciones
     items = relationship("Item", back_populates="list", cascade="all, delete-orphan")
-    user = relationship("User", back_populates="lists")  # NUEVO
+    user = relationship("User", back_populates="lists")
 
 
 class Item(Base):
@@ -42,5 +43,4 @@ class Item(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relación con lista
     list = relationship("List", back_populates="items")
